@@ -54,7 +54,7 @@ File.open(filename, 'rb') do |fh|
         buffer = fh.read(READ_BUFFER_SIZE)
 	    out_s = '%08X  ' % offset
 	    print_s = ' '
-		buffer.bytes.each do |b|
+		buffer.each_byte do |b|
 		    out_s << '%02X ' % b
 		    if PRINTABLE_SET === b
 			    print_s << b.chr
@@ -65,6 +65,7 @@ File.open(filename, 'rb') do |fh|
 		(READ_BUFFER_SIZE - buffer.size).times { out_s << '   '}
 		out_s << print_s
         puts out_s
+		offset = offset + READ_BUFFER_SIZE
 	end
 end
 
