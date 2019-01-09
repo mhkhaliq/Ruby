@@ -14,7 +14,6 @@
 ################################################################################
 
 require 'optparse'
-require 'set'
 
 
 
@@ -23,9 +22,13 @@ require 'set'
 ################################################################################
 
 READ_BUFFER_SIZE = 16
+PADDING_ITEM_LENGTH = 3
+PADDING_SIZE = READ_BUFFER_SIZE * PADDING_ITEM_LENGTH
+
+NUM_ASCII_CHARS = 256
 MIN_PRINT_ASCII = 0x20
 MAX_PRINT_ASCII = 0x7E
-PRINTABLE_SET = Set[*(MIN_PRINT_ASCII .. MAX_PRINT_ASCII)]
+UNPRINTABLE_CHAR = '.'
 
 
 
@@ -50,21 +53,35 @@ end
 
 File.open(filename, 'rb') do |fh|
     offset = 0
+	
+	# Create the lookup arrays
+	hex_a = Array.new(NUM_ASCII_CHARS)
+	print_a = Array.new(NUM_ASCII_CHARS)
+	(0 ... NUM_ASCII_CHARS).each do |i|
+	    hex_a[i] =  '%02X ' % i
+		if i >= MIN_PRINT_ASCII && i <= MAX_PRINT_ASCII
+		    print_a[i] = i.chr
+		else
+		    print_a[i] = UNPRINTABLE_CHAR
+		end
+	end
+		
     until fh.eof?
         buffer = fh.read(READ_BUFFER_SIZE)
-	    out_s = '%08X  ' % offset
+	    offset_s = '%08X  ' % offset
 	    print_s = ' '
+		hex_s = ''
+		
 		buffer.each_byte do |b|
-		    out_s << '%02X ' % b
-		    if PRINTABLE_SET === b
-			    print_s << b.chr
-			else
-			    print_s << '.'
-			end
+		    hex_s << hex_a[b]
+			print_s << print_a[b]
 		end
-		(READ_BUFFER_SIZE - buffer.size).times { out_s << '   '}
-		out_s << print_s
-        puts out_s
+				
+		if READ_BUFFER_SIZE > buffer.size
+		    hex_s = hex_s.ljust(PADDING_SIZE, ' ')
+        end			
+		out_s = offset_s << hex_s << print_s
+		puts out_s
 		offset = offset + READ_BUFFER_SIZE
 	end
 end
